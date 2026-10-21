@@ -1,0 +1,1 @@
+export default function Avatar({ user, size = 'md' }) { return user?.avatarUrl ? <img className={`avatar ${size}`} src={user.avatarUrl} alt="" /> : <div className={`avatar ${size} initials`}>{user?.username?.[0]?.toUpperCase() || '?'}</div>; }

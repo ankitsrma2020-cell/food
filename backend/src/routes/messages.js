@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import mongoose from 'mongoose';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
+import { auth } from '../middleware/auth.js';
+const router = Router();
+const userFields = 'username fullName avatarUrl';
+router.get('/inbox', auth, async (req, res) => { const messages = await Message.find({ $or: [{ sender: req.user._id }, { recipient: req.user._id }] }).sort('-createdAt').populate('sender', userFields).populate('recipient', userFields).limit(200); const seen = new Set(); const conversations = messages.filter(item => { const other = String(item.sender._id) === String(req.user._id) ? item.recipient._id : item.sender._id; if (seen.has(String(other))) return false; seen.add(String(other)); return true; }); res.json({ conversations }); });
+router.get('/:userId', auth, async (req, res) => { if (!mongoose.isValidObjectId(req.params.userId)) return res.status(400).json({ message: 'Invalid user id' }); const user = await User.findById(req.params.userId).select(userFields); if (!user) return res.status(404).json({ message: 'User not found' }); const messages = await Message.find({ $or: [{ sender: req.user._id, recipient: user._id }, { sender: user._id, recipient: req.user._id }] }).sort('createdAt').populate('sender recipient', userFields); await Message.updateMany({ sender: user._id, recipient: req.user._id, readAt: null }, { $set: { readAt: new Date() } }); res.json({ user, messages }); });
+router.post('/:userId', auth, async (req, res) => { if (!mongoose.isValidObjectId(req.params.userId)) return res.status(400).json({ message: 'Invalid user id' }); const text = String(req.body?.text || '').trim(); if (!text) return res.status(400).json({ message: 'Message cannot be empty' }); if (String(req.params.userId) === String(req.user._id)) return res.status(400).json({ message: 'You cannot message yourself' }); if (!await User.exists({ _id: req.params.userId })) return res.status(404).json({ message: 'User not found' }); const message = await Message.create({ sender: req.user._id, recipient: req.params.userId, text }); res.status(201).json({ message: await message.populate('sender recipient', userFields) }); });
+export default router;

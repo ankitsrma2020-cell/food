@@ -1,0 +1,28 @@
+import 'dotenv/config';
+import 'express-async-errors';
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import mongoose from 'mongoose';
+import { connectDB, DB_NAME } from './config/db.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import postRoutes from './routes/posts.js';
+import uploadRoutes from './routes/uploads.js';
+import storyRoutes from './routes/stories.js';
+import messageRoutes from './routes/messages.js';
+import { notFound, errorHandler } from './middleware/error.js';
+const app = express();
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+app.use(express.json({ limit: '1mb' })); app.use(cookieParser()); app.use(morgan('tiny'));
+app.get('/api/health', (req, res) => {
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const database = states[mongoose.connection.readyState] || 'unknown';
+  res.status(database === 'connected' ? 200 : 503).json({ status: database === 'connected' ? 'ok' : 'degraded', database, databaseName: database === 'connected' ? DB_NAME : null });
+});
+app.use('/api/auth', authRoutes); app.use('/api/users', userRoutes); app.use('/api/posts', postRoutes); app.use('/api/uploads', uploadRoutes); app.use('/api/stories', storyRoutes); app.use('/api/messages', messageRoutes);
+app.use(notFound); app.use(errorHandler);
+const port = process.env.PORT || 5000;
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is required in backend/.env before starting the server');
+connectDB().then(() => app.listen(port, () => console.log(`API listening on ${port}`))).catch(err => { console.error(err.message); process.exit(1); });

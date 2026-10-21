@@ -1,0 +1,4 @@
+import { createContext, useContext, useEffect, useState } from 'react'; import { api } from '../api';
+const Ctx = createContext(null);
+export function AuthProvider({ children }) { const [user, setUser] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); useEffect(() => { api('/auth/me').then(d => setUser(d.user)).catch(err => { if (!/Authentication required|Invalid or expired session|User no longer exists/.test(err.message)) setError(err.message); }).finally(() => setLoading(false)); }, []); const login = async body => { const d = await api('/auth/login', { method: 'POST', body: JSON.stringify(body) }); setUser(d.user); setError(''); }; const logout = async () => { try { await api('/auth/logout', { method: 'POST' }); } finally { setUser(null); } }; return <Ctx.Provider value={{ user, setUser, loading, error, login, logout }}>{children}</Ctx.Provider>; }
+export const useAuth = () => useContext(Ctx);

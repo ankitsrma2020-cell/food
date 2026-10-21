@@ -1,0 +1,1 @@
+.profile-posts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.profile-posts .post{margin:0;padding:0;border:0}.profile-posts .post header,.profile-posts .post-actions,.profile-posts .post-meta,.profile-posts .comment-form{display:none}.profile-posts .post-image{aspect-ratio:1;border:0;border-radius:0;object-fit:cover}
